@@ -18,6 +18,14 @@ public class StateMachineHandlerEditor : Editor
 						.SelectMany(s => s.GetTypes())
 						.Where(p => typeof(StateMachineAction).IsAssignableFrom(p) && p.IsClass);
 
+	void OnEnable()
+	{
+		hideFlags = HideFlags.HideAndDontSave;
+
+		if (handler == null)
+		{ handler = (StateMachineHandler)target; }
+	}
+
 	public override void OnInspectorGUI()
 	{
 		if (handler == null)

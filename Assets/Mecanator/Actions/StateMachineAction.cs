@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
 public abstract class StateMachineAction : ScriptableObject
 {
 	public abstract void Execute (StateMachineActionObject stateMachineActionObject);
+
+    private void OnEnable()
+    {
+		hideFlags = HideFlags.HideAndDontSave;
+	}
 }
