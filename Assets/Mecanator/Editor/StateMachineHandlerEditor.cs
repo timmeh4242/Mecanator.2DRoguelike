@@ -22,7 +22,7 @@ public class StateMachineHandlerEditor : Editor
 
 	void OnEnable()
 	{
-		hideFlags = HideFlags.HideAndDontSave;
+		//hideFlags = HideFlags.HideAndDontSave;
 
 		if (handler == null)
 		{ handler = (StateMachineHandler)target; }
@@ -65,7 +65,8 @@ public class StateMachineHandlerEditor : Editor
 			if (index >= 0)
 			{
                 var action = (StateMachineAction)ScriptableObject.CreateInstance(allComponentTypes.ElementAt(index));
-                handler.Actions.Add(action);
+                AssetDatabase.AddObjectToAsset(action, handler);
+				handler.Actions.Add(action);
 			}
 		});
 	}
@@ -168,7 +169,7 @@ public class StateMachineHandlerEditor : Editor
 		EditorGUILayout.EndVertical();
 	}
 
-	private void DrawActionFields(StateMachineAction action, Type type, int index)
+    private void DrawActionFields(StateMachineAction action, Type type, int index)
 	{
         foreach (var field in type.GetFields())
         {
