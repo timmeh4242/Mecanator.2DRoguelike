@@ -7,10 +7,10 @@ using System;
 using System.Linq;
 using UniRx;
 
-[CustomEditor(typeof(StateMachineHandler), true)]
-public class StateMachineHandlerEditor : Editor
+[CustomEditor(typeof(MonoBehaviourHandler), true)]
+public class MonoBehaviourHandlerEditor : Editor
 {
-	private StateMachineHandler handler;
+	private MonoBehaviourHandler handler;
 
 	private bool showActions = true;
 
@@ -25,7 +25,7 @@ public class StateMachineHandlerEditor : Editor
 		hideFlags = HideFlags.HideAndDontSave;
 
 		if (handler == null)
-		{ handler = (StateMachineHandler)target; }
+		{ handler = (MonoBehaviourHandler)target; }
 
         //if (actions == null && serializedObject.FindProperty("Actions") != null)
         //{ actions = serializedObject.FindProperty("Actions"); }
@@ -34,7 +34,7 @@ public class StateMachineHandlerEditor : Editor
 	public override void OnInspectorGUI()
 	{
 		if (handler == null)
-		{ handler = (StateMachineHandler)target; }
+		{ handler = (MonoBehaviourHandler)target; }
 
 		//if (actions == null && serializedObject.FindProperty("Actions") != null)
 		//{ actions = serializedObject.FindProperty("Actions"); }
@@ -44,14 +44,13 @@ public class StateMachineHandlerEditor : Editor
 		if (handler == null) { return; }
         //if (actions == null) { return; }
 
-		serializedObject.Update();
-		Undo.RecordObject(handler, "Added Action");
+		//serializedObject.Update();
 
 		DrawAddActions();
 		DrawActions();
         PersistChanges();
 
-        serializedObject.ApplyModifiedProperties();
+        //serializedObject.ApplyModifiedProperties();
 	}
 
 	private void DrawAddActions()
@@ -65,6 +64,7 @@ public class StateMachineHandlerEditor : Editor
 			if (index >= 0)
 			{
                 var action = (StateMachineAction)ScriptableObject.CreateInstance(allComponentTypes.ElementAt(index));
+                Undo.RecordObject(handler, "Added Action");
                 handler.Actions.Add(action);
 			}
 		});
@@ -112,6 +112,7 @@ public class StateMachineHandlerEditor : Editor
 				{
 					var actionType = handler.Actions[i].GetType();
                     //var action = actions.GetArrayElementAtIndex(i);
+                    //Debug.Log(action.objectReferenceValue.GetType());
 					//var actionType = handler.Actions[i].GetTypeWithAssembly();
 
 					var typeName = actionType == null ? "" : actionType.Name;
@@ -155,7 +156,7 @@ public class StateMachineHandlerEditor : Editor
 					}
 
                     DrawActionFields(handler.Actions[i], actionType, i);
-					DrawActionProperties(handler.Actions[i]);
+					//DrawActionProperties(handler.Actions[i]);
 				});
 			}
 
@@ -176,8 +177,11 @@ public class StateMachineHandlerEditor : Editor
 
         	var _type = field.FieldType;
         	var _value = field.GetValue(action);
+
             var isTypeSupported = TryDrawValue(_type, ref _value, field.Name);
 
+            Undo.RecordObject(action, "Updated Action");
+			//actions.GetArrayElementAtIndex(index).objectReferenceValue = _value as UnityEngine.Object;
         	if (isTypeSupported == true)
         	{
         		field.SetValue(action, _value);
