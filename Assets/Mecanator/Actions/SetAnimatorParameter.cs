@@ -8,15 +8,15 @@ public class SetAnimatorParameter : StateMachineAction
 	public string ParameterName;
 	public int Value;
 
-//	private int ParameterHash;
+	private int ParameterHash;
 
-//	void Awake()
-//	{
-//		ParameterHash = Animator.StringToHash (ParameterName);
-//	}
+    private void OnEnable()
+    {
+       ParameterHash = Animator.StringToHash(ParameterName); 
+    }
 
-	public override void Execute (StateMachineActionObject smao)
+    public override void Execute (StateMachineActionObject smao)
 	{
-		smao.Animator.SetInteger (ParameterName, Value);
+		smao.Animator.SetInteger (ParameterHash, Value);
 	}
 }
