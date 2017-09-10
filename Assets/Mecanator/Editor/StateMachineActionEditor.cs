@@ -13,12 +13,12 @@ public class StateMachineActionEditor : Editor
 		EditorGUI.BeginChangeCheck();
 
 		this.serializedObject.Update();
-		SerializedProperty Iterator = this.serializedObject.GetIterator();
-		Iterator.NextVisible(true);
+        var iterator = this.serializedObject.GetIterator();
+		iterator.NextVisible(true);
 
-		while (Iterator.NextVisible(false))
+		while (iterator.NextVisible(false))
 		{
-			EditorGUILayout.PropertyField(Iterator, true);
+			EditorGUILayout.PropertyField(iterator, true);
 		}
 
 		this.serializedObject.ApplyModifiedProperties();

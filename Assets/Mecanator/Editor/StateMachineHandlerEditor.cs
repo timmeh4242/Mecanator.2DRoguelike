@@ -6,19 +6,28 @@ using AlphaECS;
 using System;
 using System.Linq;
 using UniRx;
+using UnityEditorInternal;
 
 [CustomEditor(typeof(StateMachineHandler), true)]
 public class StateMachineHandlerEditor : Editor
 {
-	private StateMachineHandler handler;
+    private StateMachineHandler handler;
 
-	private bool showActions = true;
+    private ReorderableList reorderableActions;
 
-	private readonly IEnumerable<Type> allComponentTypes = AppDomain.CurrentDomain.GetAssemblies()
-						.SelectMany(s => s.GetTypes())
-						.Where(p => typeof(StateMachineAction).IsAssignableFrom(p) && p.IsClass);
+    private bool showActions = true;
 
-    //private SerializedProperty actions;
+    private readonly IEnumerable<Type> allComponentTypes = AppDomain.CurrentDomain.GetAssemblies()
+                        .SelectMany(s => s.GetTypes())
+                        .Where(p => typeof(StateMachineAction).IsAssignableFrom(p) && p.IsClass);
+
+    int lineHeight = 15;
+    int lineSpacing = 20;
+   
+    private class ActionInfo
+    {
+        public Type type;
+    }
 
 	void OnEnable()
 	{
@@ -27,8 +36,79 @@ public class StateMachineHandlerEditor : Editor
 		if (handler == null)
 		{ handler = (StateMachineHandler)target; }
 
-        //if (actions == null && serializedObject.FindProperty("Actions") != null)
-        //{ actions = serializedObject.FindProperty("Actions"); }
+        reorderableActions = new ReorderableList(serializedObject, serializedObject.FindProperty("Actions"), true, true, true, true);
+
+        reorderableActions.drawHeaderCallback = (Rect rect) =>
+        {
+            EditorGUI.LabelField(rect, "Actions", EditorStyles.boldLabel);
+        };
+
+        reorderableActions.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
+        {
+			var element = reorderableActions.serializedProperty.GetArrayElementAtIndex(index);
+            var so = new SerializedObject(element.objectReferenceValue);
+            so.Update();
+
+            EditorGUI.LabelField(new Rect(rect.x, rect.y, rect.width, lineHeight), handler.Actions[index].GetType().ToString());
+
+			var iterator = so.GetIterator();
+            iterator.NextVisible(true); // skip the script reference
+
+			var i = 1;
+            var showChildren = true;
+            while (iterator.NextVisible(showChildren))
+			{
+				EditorGUI.PropertyField(new Rect(rect.x, rect.y + (lineSpacing * i), rect.width, lineHeight), iterator);
+				i++;
+                if(iterator.isArray)
+                {
+                    showChildren = iterator.isExpanded;
+                }
+			}
+
+            so.ApplyModifiedProperties();
+        };
+
+        reorderableActions.elementHeightCallback = (int index) =>
+        {
+            float height = 0;
+
+			var element = reorderableActions.serializedProperty.GetArrayElementAtIndex(index);
+			var elementObj = new SerializedObject(element.objectReferenceValue);
+
+			var iterator = elementObj.GetIterator();
+			var i = 1;
+			var showChildren = true;
+            while (iterator.NextVisible(showChildren))
+			{
+				i++;
+				if (iterator.isArray)
+				{
+					showChildren = iterator.isExpanded;
+				}
+			}
+
+            height = lineSpacing * i;
+            return height;
+        };
+
+        reorderableActions.onAddDropdownCallback = (Rect rect, ReorderableList list) =>
+		{
+            var dropdownMenu = new GenericMenu();
+			var types = allComponentTypes.Select(x => x.Name).ToArray();
+
+            for (var i = 0; i < types.Length; i++)
+            {
+                dropdownMenu.AddItem(new GUIContent(types[i]), false, AddAction, new ActionInfo() { type = allComponentTypes.ElementAt(i) });
+            }
+
+            dropdownMenu.ShowAsContext();
+		};
+
+        reorderableActions.onRemoveCallback = (list) => 
+        {
+            handler.Actions.RemoveAt(list.index);
+        };
 	}
 
 	public override void OnInspectorGUI()
@@ -36,135 +116,43 @@ public class StateMachineHandlerEditor : Editor
 		if (handler == null)
 		{ handler = (StateMachineHandler)target; }
 
-		//if (actions == null && serializedObject.FindProperty("Actions") != null)
-		//{ actions = serializedObject.FindProperty("Actions"); }
-
 		base.OnInspectorGUI();
 
 		if (handler == null) { return; }
-        //if (actions == null) { return; }
 
-		serializedObject.Update();
-		Undo.RecordObject(handler, "Added Action");
+		//EditorGUI.LabelField(rect, "Actions", EditorStyles.boldLabel);
 
-		DrawAddActions();
-		DrawActions();
-        PersistChanges();
-
-        serializedObject.ApplyModifiedProperties();
-	}
-
-	private void DrawAddActions()
-	{
-		this.UseVerticalBoxLayout(() =>
-		{
-			var types = allComponentTypes.Select(x => string.Format("{0} [{1}]", x.Name, x.Namespace)).ToArray();
-			var index = -1;
-			index = EditorGUILayout.Popup("Add Action", index, types);
-
-			if (index >= 0)
-			{
-                var action = (StateMachineAction)ScriptableObject.CreateInstance(allComponentTypes.ElementAt(index));
-                AssetDatabase.AddObjectToAsset(action, handler);
-				handler.Actions.Add(action);
-			}
-		});
-	}
-
-	private void DrawActions()
-	{
-		EditorGUILayout.BeginVertical(EditorExtensions.DefaultBoxStyle);
-		int numberOfActions = handler.Actions.Count;
-
-		this.WithHorizontalLayout(() =>
-		{
-			this.WithLabel("Actions (" + numberOfActions + ")");
-			if (showActions)
-			{
-				if (this.WithIconButton("▾"))
-				{
-					showActions = false;
-				}
-			}
-			else
-			{
-				if (this.WithIconButton("▸"))
-				{
-					showActions = true;
-				}
-			}
-		});
-
-		var actionsToRemove = new List<int>();
 		if (showActions)
 		{
-            for (var i = 0; i < numberOfActions; i++)
-			{
-                if(handler.Actions[i] == null)
-                {
-					if (this.WithIconButton("-"))
-					{
-						actionsToRemove.Add(i);
-					}
-                    Debug.LogWarning("Action " + i + " is null!");
-                    continue;
-                }
-				this.UseVerticalBoxLayout(() =>
-				{
-					var actionType = handler.Actions[i].GetType();
-
-					var typeName = actionType == null ? "" : actionType.Name;
-					var typeNamespace = actionType == null ? "" : actionType.Namespace;
-
-					this.WithVerticalLayout(() =>
-					{
-						this.WithHorizontalLayout(() =>
-						{
-							if (this.WithIconButton("-"))
-							{
-								actionsToRemove.Add(i);
-							}
-
-							this.WithLabel(typeName);
-						});
-
-						EditorGUILayout.LabelField(typeNamespace);
-						//EditorGUILayout.Space();
-					});
-
-					if (actionType == null)
-					{
-						if (GUILayout.Button("TYPE NOT FOUND. TRY TO CONVERT TO BEST MATCH?"))
-						{
-                            actionType = TypeUtilities.TryGetConvertedType(actionType.ToString());
-                            if (actionType == null)
-                            {
-                              Debug.LogWarning("UNABLE TO CONVERT " + handler.Actions[i]);
-                              return;
-                            }
-                            else
-                            {
-                                Debug.LogWarning("CONVERTED " + handler.Actions[i] + " to " + actionType.ToString());
-                            }
-						}
-						else
-						{
-						    return;
-						}
-					}
-
-                    var editor = Editor.CreateEditor(handler.Actions[i]);
-                    editor.OnInspectorGUI();
-				});
-			}
-
-			for (var i = 0; i < actionsToRemove.Count(); i++)
-			{
-				handler.Actions.RemoveAt(actionsToRemove[i]);
-			}
+            if (this.WithIconButton("▾"))
+            {
+              showActions = false;
+            }
 		}
+		else
+		{
+            if (this.WithIconButton("▸"))
+            {
+                showActions = true;
+            }
+        }
 
-		EditorGUILayout.EndVertical();
+		if (showActions)
+		{
+			serializedObject.Update();
+			Undo.RecordObject(handler, "Added Action");
+			reorderableActions.DoLayoutList();
+			PersistChanges();
+			serializedObject.ApplyModifiedProperties();
+		}
+	}
+
+    private void AddAction(object info)
+    {
+        var actionInfo = (ActionInfo)info;
+        var action = (StateMachineAction)ScriptableObject.CreateInstance(actionInfo.type);
+		AssetDatabase.AddObjectToAsset(action, handler);
+		handler.Actions.Add(action);
 	}
 
 	private void PersistChanges()

@@ -7,8 +7,9 @@ using UnityEngine;
 public class SetIntParameter : StateMachineAction
 {
 	public string ParameterName;
+
 	public int Value;
-    public IntReactiveProperty blah = new IntReactiveProperty();
+    public RangedInt RangedValue;
 
 	private int ParameterHash;
 
@@ -19,6 +20,7 @@ public class SetIntParameter : StateMachineAction
 
     public override void Execute (StateMachineActionObject smao)
 	{
-		smao.Animator.SetInteger (ParameterHash, Value);
+        var value = Random.Range(RangedValue.MinValue, RangedValue.MaxValue);
+		smao.Animator.SetInteger (ParameterHash, value);
 	}
 }
