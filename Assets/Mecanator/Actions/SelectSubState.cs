@@ -1,10 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 [System.Serializable]
 public class SelectSubState : StateMachineAction
 {
+    
 	public int ChildStates = 0;
 	public string ParameterName;
 
