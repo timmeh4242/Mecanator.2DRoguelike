@@ -22,7 +22,7 @@ public class StateMachineHandlerEditor : Editor
                         .Where(p => typeof(StateMachineAction).IsAssignableFrom(p) && p.IsClass);
 
     int lineHeight = 15;
-    int lineSpacing = 20;
+    int lineSpacing = 18;
    
     private class ActionInfo
     {
@@ -49,7 +49,7 @@ public class StateMachineHandlerEditor : Editor
             var so = new SerializedObject(element.objectReferenceValue);
             so.Update();
 
-            EditorGUI.LabelField(new Rect(rect.x, rect.y, rect.width, lineHeight), handler.Actions[index].GetType().ToString());
+            EditorGUI.LabelField(new Rect(rect.x, rect.y, rect.width, lineHeight), handler.Actions[index].GetType().ToString(), EditorStyles.boldLabel);
 
 			var iterator = so.GetIterator();
             iterator.NextVisible(true); // skip the script reference
@@ -107,6 +107,8 @@ public class StateMachineHandlerEditor : Editor
 
         reorderableActions.onRemoveCallback = (list) => 
         {
+            var action = handler.Actions[list.index];
+            DestroyImmediate(action, true);
             handler.Actions.RemoveAt(list.index);
         };
 	}
