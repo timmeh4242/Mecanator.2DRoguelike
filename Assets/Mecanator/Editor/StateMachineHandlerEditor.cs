@@ -153,6 +153,7 @@ public class StateMachineHandlerEditor : Editor
     {
         var actionInfo = (ActionInfo)info;
         var action = (StateMachineAction)ScriptableObject.CreateInstance(actionInfo.type);
+        action.name = actionInfo.type.Name;
 		AssetDatabase.AddObjectToAsset(action, handler);
 		handler.Actions.Add(action);
 	}

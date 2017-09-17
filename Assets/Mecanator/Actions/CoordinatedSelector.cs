@@ -5,7 +5,7 @@ using UniRx;
 using System.Linq;
 using UniRx.Triggers;
 
-public class SelectorCoordinator : StateMachineAction
+public class CoordinatedSelector : StateMachineAction
 {
     public List<string> Parameters = new List<string>();
 	private Dictionary<int, int> ParameterTable = new Dictionary<int, int> ();
@@ -28,7 +28,8 @@ public class SelectorCoordinator : StateMachineAction
 		if (Parameters.Count <= 0)
         { return;  }
 
-        foreach (var key in ParameterTable.Keys)
+		var keys = ParameterTable.Keys.ToList ();
+        foreach (var key in keys)
 		{
             ParameterTable[key] = smao.Animator.GetInteger(key);
 		}
